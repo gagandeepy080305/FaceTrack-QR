@@ -1,16 +1,89 @@
-# React + Vite
+# FaceTrack QR
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Track Faces. Verify Presence. Simplify Attendance.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+FaceTrack QR is a smart attendance management system that combines QR-based session authentication with facial verification to prevent proxy attendance and automate classroom attendance management.
 
-## React Compiler
+The system allows faculty members to create attendance sessions, generate QR codes, monitor attendance analytics, identify defaulters, and track attendance trends. Students can securely mark attendance using facial verification.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
 
-## Expanding the ESLint configuration
+### Faculty Module
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+* Faculty Login
+* Session Creation
+* QR Code Generation
+* Attendance Monitoring
+* Attendance Analytics Dashboard
+* Attendance Trend Visualization
+* Defaulter Identification
+* Session History
+
+### Student Module
+
+* Face Registration
+* Face Verification
+* QR-Based Attendance
+* Attendance History
+
+## Technology Stack
+
+### Frontend
+
+* React.js
+* Axios
+* Recharts
+* CSS
+
+### Backend
+
+* Flask
+* DeepFace
+* OpenCV
+
+### Database
+
+* MongoDB Atlas
+
+## System Workflow
+
+Faculty Login
+→ Create Attendance Session
+→ Generate QR Code
+
+Student
+→ Scan QR
+→ Face Verification
+→ Attendance Marked
+
+MongoDB Atlas
+→ Attendance Records
+→ Analytics
+→ Trend Reports
+→ Defaulter Tracking
+
+## Project Highlights
+
+* QR Authentication
+* Facial Verification using DeepFace
+* Attendance Analytics Dashboard
+* Attendance Trend Graphs
+* Defaulter Detection
+* Session Management
+* Multi-Class Support
+* Multi-Department Support
+
+## Future Enhancements
+
+* Mobile Application
+* Email Notifications
+* Cloud Deployment
+* Real-time Attendance Alerts
+
+## Author
+
+Gagandeep Y
+Bachelor of Engineering
+FaceTrack QR Project
