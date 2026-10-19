@@ -4,10 +4,13 @@ from pymongo import MongoClient
 
 load_dotenv()
 
-MONGO_URI = os.getenv(
-    "MONGO_URI",
-    "mongodb+srv://gagan080305_db_user:xX4miCBE7lDUpktS@attendance-cluster.jmp5og6.mongodb.net/?appName=attendance-cluster"
-)
+MONGO_URI = os.getenv("MONGO_URI")
+
+if not MONGO_URI:
+    raise RuntimeError(
+        "MONGO_URI is not set. Add it to backend/.env (local) or to the "
+        "hosting provider's environment variables."
+    )
 
 client = MongoClient(MONGO_URI)
 
