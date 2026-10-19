@@ -1,0 +1,20 @@
+To start this project : 
+in terminal :
+brew services start mongodb/brew/mongodb-community
+
+Terminal 1:
+cd backend 
+source venv/bin/activate
+python app.py
+
+Terminal 2:
+cd frontend
+npm run dev
+
+
+To stop this project : 
+
+ctrl+c in both terminals and then 
+
+In terminal in which u started mongodb : 
+brew services stop mongodb/brew/mongodb-community

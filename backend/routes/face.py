@@ -7,7 +7,10 @@ import tempfile
 
 face_bp = Blueprint("face", __name__)
 
-UPLOAD_FOLDER = "uploads/faces"
+UPLOAD_FOLDER = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "uploads", "faces")
+)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 @face_bp.route("/face/test")
@@ -20,16 +23,26 @@ def face_test():
 @face_bp.route("/face/register", methods=["POST"])
 def register_face():
 
-    usn = request.form["usn"]
+    usn = request.form["usn"].strip().upper()
 
     student = db.students.find_one({
         "usn": usn
     })
 
     if not student:
-        return {
-            "message": "Invalid USN"
-        }, 404
+        dept = "IS"
+        for code in ["IS", "CS", "AI", "EC", "EE", "ME"]:
+            if code in usn:
+                dept = "CSE" if code == "CS" else ("AIML" if code == "AI" else code)
+                break
+
+        student = {
+            "usn": usn,
+            "name": f"Student {usn}",
+            "department_code": dept,
+            "class_name": f"3{dept}-A"
+        }
+        db.students.insert_one(student)
 
     if "image" not in request.files:
         return {
@@ -79,7 +92,7 @@ def register_face():
 @face_bp.route("/face/verify", methods=["POST"])
 def verify_face():
 
-    usn = request.form["usn"]
+    usn = request.form["usn"].strip().upper()
 
     student = db.students.find_one({
         "usn": usn
@@ -108,18 +121,23 @@ def verify_face():
 
     uploaded_image = request.files["image"]
 
-    with tempfile.NamedTemporaryFile(
-        delete=False,
-        suffix=".jpg"
-    ) as temp:
-
-        uploaded_image.save(temp.name)
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".jpg"
+        ) as temp:
+            temp_path = temp.name
+            uploaded_image.save(temp_path)
 
         result = DeepFace.verify(
             img1_path=registered_image,
-            img2_path=temp.name,
+            img2_path=temp_path,
             enforce_detection=False
         )
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
 
     print(result)
 
@@ -136,6 +154,7 @@ def verify_face():
     methods=["GET"]
 )
 def face_status(usn):
+    usn = usn.strip().upper()
 
     face = db.student_faces.find_one({
         "usn": usn
@@ -151,6 +170,7 @@ def face_status(usn):
     methods=["DELETE"]
 )
 def delete_face(usn):
+    usn = usn.strip().upper()
 
     face = db.student_faces.find_one({
         "usn": usn

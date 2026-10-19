@@ -1,131 +1,135 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import axios from "axios";
-import "./StudentAttendance.css";
+import { API_URL } from "../config";
+import PageShell from "../components/PageShell";
+import Notice from "../components/Notice";
+import { ChartIcon, SearchIcon } from "../components/Icons";
+
+const REQUIRED = 75;
+const GOOD = 85;
+
+const tone = (pct) => (pct >= GOOD ? "good" : pct >= REQUIRED ? "warn" : "bad");
 
 function StudentAttendance() {
   const [usn, setUsn] = useState("");
   const [attendance, setAttendance] = useState(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const API_URL = "http://192.168.29.24:5000";
+  const getAttendance = async (e) => {
+    e.preventDefault();
+    setError("");
 
-  const getAttendance = async () => {
+    if (!usn.trim()) {
+      setError("Enter your USN to view your report.");
+      return;
+    }
+
     try {
-      if (!usn) {
-        alert("Please enter a USN");
-        return;
-      }
+      setLoading(true);
       const response = await axios.get(
-        `${API_URL}/attendance/student/${usn}`
+        `${API_URL}/attendance/student/${encodeURIComponent(usn.trim())}`
       );
       setAttendance(response.data);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to fetch attendance");
+    } catch (err) {
+      console.error(err);
+      setAttendance(null);
+      setError(err.response?.data?.message || "Could not fetch attendance for this USN.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="attendance-container">
-      <div className="attendance-card">
-        <div className="attendance-header">
-          <div className="attendance-icon">
-            📊
-          </div>
-          <div>
-            <h1 className="attendance-title">Attendance Lookup</h1>
-            <div className="attendance-subtitle">Lookup subjects and check-in percentages</div>
-          </div>
-        </div>
+  const rows = attendance?.attendance ?? [];
+  const attended = rows.reduce((s, r) => s + Number(r.attended || 0), 0);
+  const total = rows.reduce((s, r) => s + Number(r.total || 0), 0);
+  const overall = total ? (attended / total) * 100 : 0;
+  const lowCount = rows.filter((r) => parseFloat(r.percentage) < REQUIRED).length;
 
-        <div className="search-box">
+  return (
+    <PageShell
+      width="lg"
+      icon={ChartIcon}
+      title="Attendance Report"
+      subtitle="Look up subject-wise attendance using your USN"
+      back={{ to: "/student-portal", label: "Student Portal" }}
+    >
+      <form onSubmit={getAttendance}>
+        <label className="ft-label" htmlFor="usn">University Seat Number (USN)</label>
+        <div className="ft-row">
           <input
-            className="search-input"
+            id="usn"
+            className="ft-input"
             type="text"
-            placeholder="Enter USN (e.g. 1RV21CS001)"
+            placeholder="e.g. 1RV21CS001"
             value={usn}
             onChange={(e) => setUsn(e.target.value.toUpperCase())}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                getAttendance();
-              }
-            }}
           />
-          <button className="search-btn" onClick={getAttendance}>
-            View Report
+          <button className="ft-btn ft-btn--primary" type="submit" disabled={loading}>
+            {loading ? <span className="ft-spinner" /> : <SearchIcon size={18} />}
+            {loading ? "Loading…" : "View report"}
           </button>
         </div>
+      </form>
 
-        {attendance && (
-          <div>
-            <div className="details-panel">
-              <div className="details-item">
-                <span className="details-label">Student Name</span>
-                <span className="details-value">{attendance.name}</span>
-              </div>
-              <div className="details-item">
-                <span className="details-label">USN / ID</span>
-                <span className="details-value">{attendance.usn}</span>
-              </div>
+      {error && <div style={{ marginTop: 20 }}><Notice type="error">{error}</Notice></div>}
+
+      {attendance && (
+        <>
+          <div className="ft-identity">
+            <div><small>Student</small><strong>{attendance.name}</strong></div>
+            <div><small>USN</small><strong>{attendance.usn}</strong></div>
+          </div>
+
+          <div className="ft-stats">
+            <div className={`ft-stat ft-stat--${tone(overall)}`}>
+              <small>Overall</small><strong>{overall.toFixed(1)}%</strong>
             </div>
-
-            <h2 className="report-section-title">Attendance Report</h2>
-
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Subject</th>
-                    <th style={{ textAlign: "center" }}>Attended</th>
-                    <th style={{ textAlign: "center" }}>Total Classes</th>
-                    <th style={{ textAlign: "right" }}>Percentage</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attendance.attendance.map((subject, index) => {
-                    const pct = parseFloat(subject.percentage);
-                    const isGood = pct >= 85;
-                    return (
-                      <tr key={index}>
-                        <td style={{ fontWeight: 600, color: "#ffffff" }}>
-                          {subject.subject_code}
-                        </td>
-                        <td style={{ textAlign: "center" }}>
-                          {subject.attended}
-                        </td>
-                        <td style={{ textAlign: "center" }}>
-                          {subject.total}
-                        </td>
-                        <td style={{ textAlign: "right" }}>
-                          <span className={isGood ? "status-present" : "status-absent"}>
-                            {subject.percentage}%
-                          </span>
-                          <div className="progress-bar-container">
-                            <div 
-                              className={`progress-bar-fill ${isGood ? "good" : "poor"}`}
-                              style={{ width: `${Math.min(pct, 100)}%` }}
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="ft-stat">
+              <small>Classes attended</small><strong>{attended} / {total}</strong>
+            </div>
+            <div className={`ft-stat ${lowCount ? "ft-stat--bad" : "ft-stat--good"}`}>
+              <small>Below {REQUIRED}%</small>
+              <strong>{lowCount} {lowCount === 1 ? "subject" : "subjects"}</strong>
             </div>
           </div>
-        )}
 
-        <div className="attendance-footer">
-          <Link to="/student" className="back-link">
-            ← Student Dashboard
-          </Link>
-          <Link to="/" className="back-link">
-            Faculty Portal
-          </Link>
-        </div>
-      </div>
-    </div>
+          <div className="ft-table-wrap">
+            <table className="ft-table">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th className="ft-num">Attended</th>
+                  <th className="ft-num">Total</th>
+                  <th className="ft-num">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((subject) => {
+                  const pct = parseFloat(subject.percentage) || 0;
+                  const t = tone(pct);
+                  return (
+                    <tr key={subject.subject_code}>
+                      <td>{subject.subject_code}</td>
+                      <td className="ft-num">{subject.attended}</td>
+                      <td className="ft-num">{subject.total}</td>
+                      <td>
+                        <div className="ft-pct">
+                          <div className={`ft-bar ft-bar--${t}`}>
+                            <i style={{ width: `${Math.min(pct, 100)}%` }} />
+                          </div>
+                          <span className={`ft-badge ft-badge--${t}`}>{subject.percentage}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </PageShell>
   );
 }
 

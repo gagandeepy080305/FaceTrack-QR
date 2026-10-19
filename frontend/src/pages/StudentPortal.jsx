@@ -1,60 +1,59 @@
-import { useNavigate } from "react-router-dom";
-import "./StudentPortal.css";
+import { Link } from "react-router-dom";
+import PageShell from "../components/PageShell";
+import {
+  CameraIcon,
+  ChartIcon,
+  ChevronRightIcon,
+  UserCheckIcon,
+} from "../components/Icons";
+
+const OPTIONS = [
+  {
+    to: "/attendance",
+    icon: ChartIcon,
+    title: "View Attendance",
+    desc: "Subject-wise attendance and percentages",
+  },
+  {
+    to: "/face-register",
+    icon: CameraIcon,
+    title: "Face Registration",
+    desc: "Enrol your face for QR check-ins",
+  },
+  {
+    to: "/face-status",
+    icon: UserCheckIcon,
+    title: "Face Status",
+    desc: "Check whether your face is registered",
+  },
+];
 
 function StudentPortal() {
-
-  const navigate = useNavigate();
-
   return (
-    <div className="portal-container">
+    <PageShell
+      width="md"
+      icon={UserCheckIcon}
+      title="Student Portal"
+      subtitle="Manage your face profile and review your attendance"
+      back={{ to: "/", label: "Faculty sign in" }}
+    >
+      <nav className="ft-hub" aria-label="Student services">
+        {OPTIONS.map(({ to, icon: Icon, title, desc }) => (
+          <Link key={to} to={to} className="ft-hub__item">
+            <span className="ft-hub__icon"><Icon size={22} /></span>
+            <span className="ft-hub__body">
+              <strong>{title}</strong>
+              <span>{desc}</span>
+            </span>
+            <ChevronRightIcon size={18} className="ft-hub__chev" />
+          </Link>
+        ))}
+      </nav>
 
-      <div className="portal-card">
-
-        <h1>
-          Student Portal
-        </h1>
-
-        <p>
-          Smart Attendance System
-        </p>
-
-        <div className="portal-grid">
-
-          <div
-            className="portal-item"
-            onClick={() =>
-              navigate("/attendance")
-            }
-          >
-            <h2>📊</h2>
-            <h3>View Attendance</h3>
-          </div>
-
-          <div
-            className="portal-item"
-            onClick={() =>
-              navigate("/face-register")
-            }
-          >
-            <h2>📸</h2>
-            <h3>Face Registration</h3>
-          </div>
-
-          <div
-  className="portal-item"
-  onClick={() =>
-    navigate("/face-status")
-  }
->
-  <h2>👤</h2>
-  <h3>Face Status</h3>
-</div>
-
-        </div>
-
-      </div>
-
-    </div>
+      <p className="ft-hint" style={{ marginTop: 20 }}>
+        To mark attendance, scan the QR code shown by your faculty in class.
+      </p>
+    </PageShell>
   );
 }
 

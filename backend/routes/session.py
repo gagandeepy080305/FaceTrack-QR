@@ -63,27 +63,19 @@ def session_history(faculty_id):
         else:
             status = "Active"
 
+        created_at_val = session.get("created_at")
+        if hasattr(created_at_val, "isoformat"):
+            created_at_str = created_at_val.isoformat() + "Z"
+        else:
+            created_at_str = str(created_at_val)
+
         session_list.append({
             "session_id": session["session_id"],
             "department_code": session["department_code"],
             "class_name": session["class_name"],
             "subject_code": session["subject_code"],
             "status": status,
-            "created_at": str(session["created_at"])
-        })
-
-    return session_list
-
-    session_list = []
-
-    for session in sessions:
-        session_list.append({
-            "session_id": session["session_id"],
-            "department_code": session["department_code"],
-            "class_name": session["class_name"],
-            "subject_code": session["subject_code"],
-            "status": session["status"],
-            "created_at": str(session["created_at"])
+            "created_at": created_at_str
         })
 
     return session_list

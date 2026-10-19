@@ -1,42 +1,28 @@
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
 import { Html5QrcodeScanner } from "html5-qrcode";
-import "./QRScanner.css";
+import PageShell from "../components/PageShell";
+import { ScanIcon } from "../components/Icons";
 
 function QRScanner() {
   useEffect(() => {
     const scanner = new Html5QrcodeScanner(
       "reader",
-      {
-        qrbox: {
-          width: 250,
-          height: 250,
-        },
-        fps: 5,
-      },
+      { qrbox: { width: 250, height: 250 }, fps: 5 },
       false
     );
 
     scanner.render(
       (decodedText) => {
-        console.log("QR Code:", decodedText);
-
-        // Extract session ID if decodedText is a URL
+        // The QR holds either a full check-in URL or a bare session id.
         let sessionId = decodedText;
-        if (decodedText.includes("?session=")) {
-          const urlParams = new URLSearchParams(decodedText.split("?")[1]);
-          sessionId = urlParams.get("session") || decodedText;
+        try {
+          sessionId = new URL(decodedText).searchParams.get("session") || decodedText;
+        } catch {
+          /* not a URL — treat as raw session id */
         }
-
-        // Save Session ID
-        localStorage.setItem("session_id", sessionId);
-
-        // Redirect to Student Dashboard with parameter
-        window.location.href = `/student?session=${sessionId}`;
+        window.location.href = `/mark?session=${encodeURIComponent(sessionId)}`;
       },
-      (error) => {
-        // Ignore scan errors
-      }
+      () => {}
     );
 
     return () => {
@@ -45,25 +31,17 @@ function QRScanner() {
   }, []);
 
   return (
-    <div className="scanner-container">
-      <div className="scanner-card">
-        <div className="scanner-header">
-          <div className="scanner-icon">📷</div>
-          <h1 className="scanner-title">Scan QR Attendance</h1>
-          <p className="scanner-subtitle">
-            Point your camera at the screen QR code to check in
-          </p>
-        </div>
-
-        <div id="reader"></div>
-
-        <div className="scanner-footer">
-          <Link to="/student" className="scanner-back-link">
-            ← Student Dashboard
-          </Link>
-        </div>
+    <PageShell
+      width="md"
+      icon={ScanIcon}
+      title="Scan Session QR"
+      subtitle="Point your camera at the QR code shown by your faculty"
+      back={{ to: "/student-portal", label: "Student Portal" }}
+    >
+      <div className="ft-scanner">
+        <div id="reader" />
       </div>
-    </div>
+    </PageShell>
   );
 }
 

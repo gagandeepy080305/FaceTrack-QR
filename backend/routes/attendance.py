@@ -23,8 +23,8 @@ def mark_attendance():
 
     print("Client IP:", client_ip)
 
-    # Allow only devices on College WiFi
-    if not client_ip.startswith("192.168.29."):
+    # Allow devices on College WiFi or localhost for local testing
+    if client_ip not in ["127.0.0.1", "::1"] and not client_ip.startswith("192.168.29."):
         return {
             "message": "Not Connected To College WiFi"
         }, 400

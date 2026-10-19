@@ -1,8 +1,8 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import Login from "./pages/Login";
 import FacultyDashboard from "./pages/FacultyDashboard";
-import StudentDashboard from "./pages/StudentDashboard";
+import MarkAttendance from "./pages/MarkAttendance";
 import QRScanner from "./pages/QRScanner";
 import FaceRegistration from "./pages/FaceRegistration";
 import FaceVerification from "./pages/FaceVerification";
@@ -10,6 +10,11 @@ import StudentAttendance from "./pages/StudentAttendance";
 import StudentPortal from "./pages/StudentPortal";
 import FaceStatus
   from "./pages/FaceStatus";
+
+function LegacyStudentRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={search ? `/mark${search}` : "/student-portal"} replace />;
+}
 
 function App() {
   return (
@@ -27,9 +32,12 @@ function App() {
         />
 
         <Route
-          path="/student"
-          element={<StudentDashboard />}
+          path="/mark"
+          element={<MarkAttendance />}
         />
+
+        {/* Legacy QR links (/student?session=…) keep working */}
+        <Route path="/student" element={<LegacyStudentRedirect />} />
 
         <Route
           path="/scan"

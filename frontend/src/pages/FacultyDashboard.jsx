@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { QRCodeCanvas } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
+import { API_URL, FRONTEND_URL } from "../config";
 import "./FacultyDashboard.css";
 import {
   LineChart,
@@ -31,11 +32,29 @@ const [selectedAssignment, setSelectedAssignment] =
   useState(null);
   const [defaulters, setDefaulters] =
     useState([]);
+  const [qrFrontendUrl, setQrFrontendUrl] = useState(FRONTEND_URL);
+  const [copied, setCopied] = useState(false);
 
   const navigate = useNavigate();
 
-  const API_URL = "http://192.168.29.24:5000";
-  const FRONTEND_URL = "http://192.168.29.24:5173";
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "—";
+    const utcString =
+      dateString.endsWith("Z") || dateString.includes("+")
+        ? dateString
+        : dateString.replace(" ", "T") + "Z";
+    const date = new Date(utcString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  };
 
   useEffect(() => {
     const storedFacultyId = localStorage.getItem("faculty_id");
@@ -57,6 +76,15 @@ const [selectedAssignment, setSelectedAssignment] =
           `${API_URL}/session/history/${storedFacultyId}`
         );
         setSessionHistory(historyRes.data);
+
+        try {
+          const serverRes = await axios.get(`${API_URL}/server/info`);
+          if (serverRes.data?.frontend_url) {
+            setQrFrontendUrl(serverRes.data.frontend_url);
+          }
+        } catch (e) {
+          console.warn("Could not fetch server LAN IP:", e);
+        }
       } catch (error) {
         console.error("Failed to load initial faculty data:", error);
       }
@@ -216,7 +244,7 @@ const [selectedAssignment, setSelectedAssignment] =
       <div className="dashboard-header">
         <div className="header-left">
           <div className="header-icon">
-            🎓
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 9 12 4 2 9l10 5 10-5Z" /><path d="M6 11.5V16c0 1.2 2.7 3 6 3s6-1.8 6-3v-4.5" /></svg>
           </div>
           <div>
             <h1 className="dashboard-title">Smart Attendance Dashboard</h1>
@@ -265,11 +293,54 @@ const [selectedAssignment, setSelectedAssignment] =
               <p className="qr-desc">Students scan to verify identity and check-in</p>
               <div className="qr-wrapper">
                 <QRCodeCanvas
-                  value={`${FRONTEND_URL}/student?session=${sessionId}`}
+                  value={`${qrFrontendUrl}/mark?session=${sessionId}`}
                   size={240}
                   level="H"
                   includeMargin={true}
                 />
+              </div>
+              <div style={{ marginTop: "12px", textAlign: "center" }}>
+                <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "6px" }}>
+                  Direct Link for Mobile Devices:
+                </p>
+                <div style={{ display: "flex", gap: "8px", justifyContent: "center", alignItems: "center" }}>
+                  <a
+                    href={`${qrFrontendUrl}/mark?session=${sessionId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      fontSize: "12px",
+                      color: "var(--brand-primary)",
+                      textDecoration: "underline",
+                      wordBreak: "break-all",
+                      maxWidth: "240px"
+                    }}
+                  >
+                    {`${qrFrontendUrl}/mark?session=${sessionId}`}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${qrFrontendUrl}/mark?session=${sessionId}`);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    style={{
+                      padding: "4px 8px",
+                      fontSize: "11px",
+                      borderRadius: "4px",
+                      border: "1px solid var(--border-strong)",
+                      background: copied ? "var(--ok-bg)" : "#fff",
+                      color: copied ? "var(--ok-text)" : "var(--text-primary)",
+                      cursor: "pointer"
+                    }}
+                  >
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+                <p style={{ fontSize: "11px", color: "var(--text-tertiary)", marginTop: "8px" }}>
+                  Note: the phone must be on the same Wi-Fi network.
+                </p>
               </div>
               <div className="session-info-pills">
                 <span className="info-pill">Session ID: {sessionId}</span>
@@ -410,25 +481,25 @@ const [selectedAssignment, setSelectedAssignment] =
             <div className="chart-card">
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e3e8ef" vertical={false} />
                   <XAxis 
                     dataKey="date" 
-                    tick={{ fill: "#8b96b3", fontSize: 11, fontWeight: 500 }} 
-                    axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                    tick={{ fill: "#4b5a70", fontSize: 11, fontWeight: 500 }} 
+                    axisLine={{ stroke: "#dfe4ec" }}
                     tickLine={false}
                   />
                   <YAxis 
                     domain={[0, 100]} 
-                    tick={{ fill: "#8b96b3", fontSize: 11, fontWeight: 500 }} 
-                    axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                    tick={{ fill: "#4b5a70", fontSize: 11, fontWeight: 500 }} 
+                    axisLine={{ stroke: "#dfe4ec" }}
                     tickLine={false}
                   />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: "#111a2e", 
-                      borderColor: "rgba(255,255,255,0.08)",
-                      borderRadius: "12px",
-                      color: "#f1f4f9",
+                      backgroundColor: "#ffffff", 
+                      borderColor: "#dfe4ec",
+                      borderRadius: "8px",
+                      color: "#0f1b2d",
                       fontFamily: "var(--font-sans)",
                       fontSize: "12px"
                     }}
@@ -436,9 +507,9 @@ const [selectedAssignment, setSelectedAssignment] =
                   <Line
                     type="monotone"
                     dataKey="attendance_percentage"
-                    stroke="#4f6df5"
+                    stroke="#1f4fa3"
                     strokeWidth={3}
-                    activeDot={{ r: 6, fill: "#7c3aed" }}
+                    activeDot={{ r: 6, fill: "#1f4fa3" }}
                     dot={{ strokeWidth: 2, r: 3 }}
                   />
                 </LineChart>
@@ -505,7 +576,7 @@ const [selectedAssignment, setSelectedAssignment] =
               <tbody>
                 {sessionHistory.map((session, index) => (
                   <tr key={index}>
-                    <td style={{ fontFamily: "monospace", fontSize: "13px", color: "#ffffff" }}>{session.session_id}</td>
+                    <td style={{ fontFamily: "monospace", fontSize: "13px", color: "var(--text-primary)" }}>{session.session_id}</td>
                     <td>{session.department_code}</td>
                     <td>{session.class_name}</td>
                     <td>{session.subject_code}</td>
@@ -514,7 +585,7 @@ const [selectedAssignment, setSelectedAssignment] =
                         {session.status}
                       </span>
                     </td>
-                    <td>{session.created_at}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>{formatDateTime(session.created_at)}</td>
                   </tr>
                 ))}
               </tbody>

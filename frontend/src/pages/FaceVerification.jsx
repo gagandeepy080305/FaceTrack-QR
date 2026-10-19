@@ -1,71 +1,72 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import "./FaceUtility.css";
+import { API_URL } from "../config";
+import PageShell from "../components/PageShell";
+import Notice from "../components/Notice";
+import FileDrop from "../components/FileDrop";
+import { UserCheckIcon } from "../components/Icons";
 
 function FaceVerification() {
   const [usn, setUsn] = useState("");
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
 
-  const verifyFace = async () => {
+  const verifyFace = async (e) => {
+    e.preventDefault();
+    setResult(null);
+
     try {
-      if (!usn) {
-        alert("Enter USN");
-        return;
-      }
-      if (!image) {
-        alert("Select an image first");
-        return;
-      }
-
       setLoading(true);
       const formData = new FormData();
-      formData.append("usn", usn);
+      formData.append("usn", usn.trim());
       formData.append("image", image);
 
-      const response = await axios.post(
-        "http://192.168.29.24:5000/face/verify",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await axios.post(`${API_URL}/face/verify`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-      if (response.data.verified) {
-        alert(
-          `Face Verified\nDistance: ${response.data.distance}`
-        );
-      } else {
-        alert(
-          `Face Not Matched\nDistance: ${response.data.distance}`
-        );
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Verification Failed");
+      const { verified, distance } = response.data;
+      setResult(
+        verified
+          ? { type: "success", title: "Face verified", text: `Match distance: ${distance}` }
+          : { type: "error", title: "Face not matched", text: `Match distance: ${distance}` }
+      );
+    } catch (err) {
+      console.error(err);
+      setResult({
+        type: "error",
+        title: "Verification failed",
+        text: err.response?.data?.message || "Could not verify. Please try again.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="face-container">
-      <div className="face-card">
-        <div className="face-header">
-          <div className="face-icon">🔍</div>
-          <div>
-            <h1 className="face-title">Face Verification</h1>
-            <p className="face-subtitle">Test check-in face match algorithms</p>
-          </div>
-        </div>
+    <PageShell
+      width="md"
+      icon={UserCheckIcon}
+      title="Test Face Verification"
+      subtitle="Confirm your registered face is recognised before class"
+      back={{ to: "/face-register", label: "Face Registration" }}
+      footer={
+        <>
+          <Link to="/student-portal" className="ft-link">Student Portal</Link>
+          <span />
+        </>
+      }
+    >
+      <form onSubmit={verifyFace}>
+        {result && <Notice type={result.type} title={result.title}>{result.text}</Notice>}
 
-        <div className="face-input-group">
-          <label className="face-label">Student USN</label>
+        <div className="ft-field">
+          <label className="ft-label" htmlFor="usn">University Seat Number (USN)</label>
           <input
-            className="face-input"
+            id="usn"
+            className="ft-input"
             type="text"
             placeholder="e.g. 1RV21CS001"
             value={usn}
@@ -73,51 +74,28 @@ function FaceVerification() {
           />
         </div>
 
-        <div className="face-input-group">
-          <label className="face-label">Selfie Image</label>
-          <label htmlFor="verify-image" className="face-file-box">
-            <div className="file-icon">📸</div>
-            <div className="file-text">
-              {image ? "Change Verification Photo" : "Choose Selfie Photo"}
-            </div>
-            <div className="file-subtext">JPEG or PNG file capture</div>
-            {image && (
-              <span className="file-badge">
-                Selected: {image.name.length > 20 ? image.name.substring(0, 17) + "..." : image.name}
-              </span>
-            )}
-          </label>
-          <input
+        <div className="ft-field">
+          <span className="ft-label">Selfie</span>
+          <FileDrop
             id="verify-image"
-            className="face-hidden-input"
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                setImage(e.target.files[0]);
-              }
-            }}
+            file={image}
+            onChange={setImage}
+            capture="user"
+            title="Take or choose a selfie"
+            hint="Opens your camera on mobile devices"
           />
         </div>
 
-        <button 
-          className="face-action-btn" 
-          onClick={verifyFace}
-          disabled={loading || !usn || !image}
+        <button
+          className="ft-btn ft-btn--primary ft-btn--block"
+          type="submit"
+          disabled={loading || !usn.trim() || !image}
         >
-          {loading ? "Verifying..." : "Verify Face Match"}
+          {loading && <span className="ft-spinner" />}
+          {loading ? "Verifying…" : "Verify face"}
         </button>
-
-        <div className="face-footer-links">
-          <Link to="/student" className="face-footer-link">
-            ← Student Dashboard
-          </Link>
-          <Link to="/face-register" className="face-footer-link">
-            Register Profile
-          </Link>
-        </div>
-      </div>
-    </div>
+      </form>
+    </PageShell>
   );
 }
 
